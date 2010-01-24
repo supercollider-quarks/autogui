@@ -60,8 +60,14 @@ SynthDefAutogui {
 				var ctrl ;
 				if (specs[name.asSymbol].isNil) {
 					ctrl = 
-					ControlSpec(0.0, synthDef.controls[index]*2, \lin, 0.1, 
-						synthDef.controls[index])
+					ControlSpec(0.0, (synthDef.controls[index]*2).max(1), \lin, 0.1, 
+						synthDef.controls[index]) ;
+					// special treatment for out
+					if (name.asSymbol== \out) {
+						ctrl = 
+						ControlSpec(0, 1, \lin, 1, 
+							synthDef.controls[index]) ;
+						}
 					} 
 					{
 					ctrl = specs[name.asSymbol].asSpec
