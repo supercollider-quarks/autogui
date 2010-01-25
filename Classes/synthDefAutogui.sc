@@ -166,7 +166,9 @@ SynthDefAutogui {
 				StaticText.new( window, Rect( wMod*(index)+xOff+hOff, 
 					hMod*5+vOff, step, h ))
 						.string_( item[0] ).align_( \center)
-						.font_(Font(Font.defaultSansFace, fSize))
+						.font_(Font(Font.defaultSansFace, fSize)),
+				UserView.new( window, Rect( wMod*(index)+xOff+hOff, 
+					hMod*5+vOff, step, h ))
 				] ;
 				guiArr = guiArr.add(guiElement) ;			
 		}) ;		
@@ -210,9 +212,16 @@ SynthDefAutogui {
 				guiElement[2].value_(item[1].unmap(me.value)) ;
 				synth.set(name, me.value) ;
 				if(item[0].asSymbol == \out && stetho.notNil) {
-					synth.get(\out, { |v| bus = v ; {stetho.index_(bus)}.defer }) } 
-				}
-
+					synth.get(\out, { |v| bus = v ; {stetho.index_(bus)}.defer }) };
+			} ;
+			guiElement[5].keyDownAction = {
+				item[1].makeWindow(action:{|spec| 
+					item[1] = spec ;
+					guiElement[0].value_(item[1].minval) ;
+					guiElement[1].value_(item[1].maxval) ;
+					guiElement[2].value_(item[1].unmap(guiElement[3].value))
+				})
+			}
 		}) ;	
 	}
 
