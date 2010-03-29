@@ -92,7 +92,7 @@ SynthDefAutogui {
 		if (scopeOn)
 			{
 			composite = CompositeView.new(window, Rect(mrg+hOff, mrg+vOff, step*3, h*7)) ;
-			stetho = Stethoscope.new(Server.default, 1, rate:rate, view: composite)
+			stetho = Stethoscope.new(target, 1, rate:rate, view: composite)
 			};
 		// general controllers
 		playB = Button.new(window, Rect(mrg+hOff, hMod*4+vOff, hMod*1.25, h))
@@ -114,7 +114,7 @@ SynthDefAutogui {
 		labelArr = [
 		StaticText.new( window, Rect( xOff+hOff, mrg+vOff, step, h ))
 						.string_( "min" ).align_( \right)
-						.font_(Font(JFont.defaultSansFace, fSize)) ,
+						.font_(Font(Font.defaultSansFace, fSize)) ,
 		StaticText.new( window, Rect( xOff+hOff, hMod+vOff, step, h ))
 						.string_( "max" ).align_( \right)
 						.font_(Font(Font.defaultSansFace, fSize)) ,
@@ -133,7 +133,7 @@ SynthDefAutogui {
 			{ 
 				{
 			synth = synthDef.play(target,args,addAction=addAction) ;
-			Server.default.sync ;
+			target.sync ;
 			// attention to scope
 			if (scopeOn)
 				{synth.get(\out, { |v| bus = v ; {stetho.index_(bus)}.defer })} ;
@@ -142,7 +142,7 @@ SynthDefAutogui {
 			{ 
 				{
 			synth = aSynth  ;
-			Server.default.sync ;
+			target.sync ;
 			if (scopeOn)
 				// attention to scope
 				{ synth.get(\out, { |v| bus = v ; {stetho.index_(bus)}.defer }) };
