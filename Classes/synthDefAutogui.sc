@@ -23,6 +23,7 @@ SynthDefAutogui {
 	initSynthDefAutogui { arg argArray ;	
 		#name, aSynth, rate, target, args, addAction, 
 			closeOnCmdPeriod, freeOnClose, window, step , hOff, vOff, scopeOn, specs  = argArray ;
+		if (target.isNil) {target = Server.default } ;
 		synthDef = SynthDefStorage.synthDefDict[name.asString] ;
 		// specs is a dict of controlspecs
 		// we need to access it, so better having a void one
@@ -92,7 +93,7 @@ SynthDefAutogui {
 		if (scopeOn)
 			{
 			composite = CompositeView.new(window, Rect(mrg+hOff, mrg+vOff, step*3, h*7)) ;
-			stetho = Stethoscope.new(target, 1, rate:rate, view: composite)
+			stetho = Stethoscope.new(target, 1, rate:rate, view: composite) ;
 			};
 		// general controllers
 		playB = Button.new(window, Rect(mrg+hOff, hMod*4+vOff, hMod*1.25, h))
