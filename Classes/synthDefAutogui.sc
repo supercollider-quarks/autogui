@@ -24,7 +24,7 @@ SynthDefAutogui {
 		#name, aSynth, rate, target, args, addAction, 
 			closeOnCmdPeriod, freeOnClose, window, step , hOff, vOff, scopeOn, specs  = argArray ;
 		if (target.isNil) {target = Server.default } ;
-		synthDef = SynthDefStorage.synthDefDict[name.asString] ;
+		synthDef = SynthDefStorage.synthDefDict[name.asString][0] ;
 		// specs is a dict of controlspecs
 		// we need to access it, so better having a void one
 		if (specs.isNil) { specs = Dictionary.new } ;

@@ -11,6 +11,6 @@
 			UGen.buildSynthDef = nil;
 		} ;
 		// Just adding this
-		SynthDefStorage.synthDefDict.add(name->this) ;
+		SynthDefStorage.synthDefDict.add(name->[this, ugenGraphFunc.asCompileString]) ;
 	}
 }
