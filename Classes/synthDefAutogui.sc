@@ -15,9 +15,10 @@ SynthDefAutogui {
 			closeOnCmdPeriod = true, freeOnClose = true, 
 			window, step = 50, hOff = 0, vOff = 0, scopeOn = true,
 			specs ;
+			
 		^super.new.initSynthDefAutogui
 			([name, aSynth, rate, target,args,addAction, 
-			closeOnCmdPeriod, freeOnClose , window, step , hOff , vOff, scopeOn, specs]) 
+			closeOnCmdPeriod, freeOnClose , window, step , hOff , vOff, (GUI.current == \swing) && scopeOn, specs]) 
 	}
 
 	initSynthDefAutogui { arg argArray ;	
