@@ -35,7 +35,7 @@ SynthDefAutogui {
 		
 		scopeOn = ((GUI.current == CocoaGUI) && (target.server != Server.internal)).not && scopeOn;
 
-		synthDef = SynthDefStorage.synthDefDict[name.asString];
+		synthDef = SynthDefStorage.synthDefDict[name.asString][0];
 		// specs is a dict of controlspecs
 		// we need to access it, so better having a void one
 		if (specs.isNil) { specs = Dictionary.new } ;
