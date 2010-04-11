@@ -103,9 +103,11 @@ SynthDefAutogui {
 		// stethoscope bounds not as expected, solved with a trick 
 		if (scopeOn)
 			{
-			composite = CompositeView.new(window, Rect(mrg+hOff, mrg+vOff, step*3, h*if(GUI.scheme== CocoaGUI){5}{7}));
+			composite = CompositeView.new(window, Rect(mrg+hOff, mrg+vOff, step*3, h*5.5));
+			composite.decorator = FlowLayout(composite.bounds);
 			stetho = Stethoscope.new(target.server, 1, rate:rate, view: composite) ;
 			};
+			
 		// general controllers
 		playB = Button.new(window, Rect(mrg+hOff, hMod*4+vOff, hMod*1.25, h))
 			.states_([["| |", Color.white, Color.red], ["|>", Color.black, Color.grey]])
