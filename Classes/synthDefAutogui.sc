@@ -5,7 +5,7 @@ SynthDefAutogui {
 
 	var <>name, <>synthDef, <>aSynth, <>rate, <>target, <>args, <>addAction, 
 			<>closeOnCmdPeriod, <>freeOnClose, <>window, <>step , <>hOff, <>vOff, <>scopeOn, 
-			<>specs ;
+			<>specs, <>onInit ;
 
 	var <>controlArr, <>guiArr, <>synth, <>bus ;	
 	var <>stetho ;	
@@ -14,16 +14,16 @@ SynthDefAutogui {
 	*new { arg name, aSynth, rate = \audio, target,args,addAction=\addToTail, 
 			closeOnCmdPeriod = true, freeOnClose = true, 
 			window, step = 50, hOff = 0, vOff = 0, scopeOn = true,
-			specs ;
+			specs, onInit = true ;
 			
 		^super.new.initSynthDefAutogui
 			([name, aSynth, rate, target,args,addAction, 
-			closeOnCmdPeriod, freeOnClose , window, step , hOff , vOff, scopeOn, specs]) 
+			closeOnCmdPeriod, freeOnClose , window, step , hOff , vOff, scopeOn, specs, onInit]) 
 	}
 
 	initSynthDefAutogui { arg argArray ;	
 		#name, aSynth, rate, target, args, addAction, 
-			closeOnCmdPeriod, freeOnClose, window, step , hOff, vOff, scopeOn, specs  = argArray ;
+			closeOnCmdPeriod, freeOnClose, window, step , hOff, vOff, scopeOn, specs, onInit  = argArray ;
 		
 		if(aSynth.notNil){
 			target = aSynth
@@ -41,6 +41,7 @@ SynthDefAutogui {
 		if (specs.isNil) { specs = Dictionary.new } ;
 		// just not to fillup the init method
 		this.createMonitorTask ;
+		if (onInit) { this.autogui };
 	}
 
 	// this is THE method
