@@ -7,13 +7,12 @@
 
 	autogui { arg aSynth, rate = \audio, target, args, addAction=\addToTail, 
 					closeOnCmdPeriod = true, freeOnClose = true, 
-					window, step = 50, hOff = 0, vOff = 0, scopeOn = true, specs ;
+					window, step = 50, hOff = 0, vOff = 0, scopeOn = true, specs, onInit = true ;
 			
-		var gui = SynthDefAutogui(
+		SynthDefAutogui(
 			name, aSynth, rate, target,args,addAction, 
 			closeOnCmdPeriod, freeOnClose , 
-			window, step, hOff, vOff, scopeOn, specs)
-		.autogui ;
+			window, step, hOff, vOff, scopeOn, specs, onInit)
 	}
 
 }
@@ -22,11 +21,10 @@
 + Synth {
 	
 	autogui { arg rate = \audio, closeOnCmdPeriod = true, freeOnClose = false, 
-					window, step = 50, hOff = 0, vOff = 0, scopeOn = true, specs ;
-		var gui = SynthDefAutogui
+					window, step = 50, hOff = 0, vOff = 0, scopeOn = true, specs, onInit = true ;
+		SynthDefAutogui
 			(defName, this, rate, 
 				closeOnCmdPeriod: closeOnCmdPeriod, freeOnClose: freeOnClose, 
-				window: window, hOff: hOff, vOff: vOff, step:step, scopeOn:scopeOn, specs:specs)
-			.autogui ;
+				window: window, hOff: hOff, vOff: vOff, step:step, scopeOn:scopeOn, specs:specs, onInit:onInit)
 	}
 }
