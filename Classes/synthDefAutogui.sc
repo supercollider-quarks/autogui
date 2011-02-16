@@ -38,6 +38,7 @@ SynthDefAutogui {
 		synthDef = SynthDefStorage.synthDefDict[name.asString][0];
 		// specs is a dict of controlspecs
 		// we need to access it, so better having a void one
+		if (specs.isNil) { specs = SynthDescLib.global[name.asSymbol].tryPerform(\metadata).tryPerform(\at,\specs) };
 		if (specs.isNil) { specs = Dictionary.new } ;
 		// just not to fillup the init method
 		this.createMonitorTask ;
