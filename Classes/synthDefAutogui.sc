@@ -33,7 +33,7 @@ SynthDefAutogui {
 			}
 		};
 		
-		scopeOn = ((GUI.current == CocoaGUI) && (target.server != Server.internal)).not && scopeOn;
+		scopeOn = (((GUI.current.name == \CocoaGUI) || (GUI.current.name == \QtGUI)) && (target.server != Server.internal)).not && scopeOn;
 
 		synthDef = SynthDefStorage.synthDefDict[name.asString][0];
 		// specs is a dict of controlspecs
@@ -96,9 +96,9 @@ SynthDefAutogui {
 			window = Window.new(synthDef.name++" Control Panel", 
 					Rect(30,30, (controlArr.size+1.5)*wMod+(wMod*2), hMod*6)) ;
 			if (closeOnCmdPeriod) 
-				{ CmdPeriod.doOnce {Êwindow.close } } ;
+				{ CmdPeriod.doOnce { window.close } } ;
 			if (freeOnClose)
-				{ window.onClose_({ synth.free }) } ;
+				{ window.onClose_({ synth.free; task.stop}) } ;
 			window.front 
 		} ;
 		// if you want scope, we put it
