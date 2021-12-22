@@ -7,6 +7,7 @@
 			this.initBuild;
 			this.buildUgenGraph(ugenGraphFunc, rates, prependArgs);
 			this.finishBuild;
+			func = ugenGraphFunc;
 		} {
 			UGen.buildSynthDef = nil;
 		} ;
