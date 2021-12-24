@@ -35,7 +35,7 @@ SynthDefAutogui {
 		
 		scopeOn = (((GUI.current.name == \CocoaGUI) || (GUI.current.name == \QtGUI)) && (target.server != Server.internal)).not && scopeOn;
 
-		synthDef = SynthDefStorage.synthDefDict[name.asString][0];
+		synthDef = SynthDefStorage.synthDefDict[name.asSymbol][0]; // fix for SC 3.11+
 		// specs is a dict of controlspecs
 		// we need to access it, so better having a void one
 		if (specs.isNil) { specs = SynthDescLib.global[name.asSymbol].tryPerform(\metadata).tryPerform(\at,\specs) };
