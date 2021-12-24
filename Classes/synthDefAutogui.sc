@@ -33,7 +33,7 @@ SynthDefAutogui {
 			}
 		};
 		
-		scopeOn = (((GUI.current.name == \CocoaGUI) || (GUI.current.name == \QtGUI)) && (target.server != Server.internal)).not && scopeOn;
+		scopeOn = (((GUI.current.name == \CocoaGUI)) && (target.server != Server.internal)).not && scopeOn;
 
 		synthDef = SynthDefStorage.synthDefDict[name.asSymbol][0]; // fix for SC 3.11+
 		// specs is a dict of controlspecs
@@ -102,11 +102,12 @@ SynthDefAutogui {
 			window.front 
 		} ;
 		// if you want scope, we put it
-		// stethoscope bounds not as expected, solved with a trick 
+		// the new stethoscope (the one with scrollbars) only works with layouts,
+		// but not with decorator; todo: redo the whole ui wiht layout, really --avdrd
 		if (scopeOn)
 			{
-			composite = CompositeView.new(window, Rect(mrg+hOff, mrg+vOff, step*3, h*5.5));
-			composite.decorator = FlowLayout(composite.bounds);
+			composite = View.new(window, Rect(mrg+hOff, mrg+vOff, step*3, h*5.5));
+			composite.layout = VLayout().margins_([0, 0, 0, 0]);
 			stetho = Stethoscope.new(target.server, 1, rate:rate, view: composite) ;
 			};
 			
