@@ -7,23 +7,24 @@ SynthDefAutogui {
 			<>closeOnCmdPeriod, <>freeOnClose, <>window, <>step , <>hOff, <>vOff, <>scopeOn, 
 			<>specs, <>onInit ;
 
-	var <>controlArr, <>guiArr, <>synth, <>bus ;	
-	var <>stetho ;	
+	var <>controlArr, <>guiArr, <>synth, <>bus ;
+	var <>stetho ;
+	var <>synthDesc ;
 	var <>task, <>dur ; // for  monitor
 	
-	*new { arg name, aSynth, rate = \audio, target,args,addAction=\addToTail, 
-			closeOnCmdPeriod = true, freeOnClose = true, 
+	*new { arg name, aSynth, rate = \audio, target,args,addAction=\addToTail,
+			closeOnCmdPeriod = true, freeOnClose = true,
 			window, step = 50, hOff = 0, vOff = 0, scopeOn = true,
-			specs, onInit = true ;
-			
+			specs, onInit = true, synthDefObj ;
+
 		^super.new.initSynthDefAutogui
-			([name, aSynth, rate, target,args,addAction, 
-			closeOnCmdPeriod, freeOnClose , window, step , hOff , vOff, scopeOn, specs, onInit]) 
+			([name, aSynth, rate, target,args,addAction,
+			closeOnCmdPeriod, freeOnClose , window, step , hOff , vOff, scopeOn, specs, onInit, synthDefObj])
 	}
 
-	initSynthDefAutogui { arg argArray ;	
-		#name, aSynth, rate, target, args, addAction, 
-			closeOnCmdPeriod, freeOnClose, window, step , hOff, vOff, scopeOn, specs, onInit  = argArray ;
+	initSynthDefAutogui { arg argArray ;
+		#name, aSynth, rate, target, args, addAction,
+			closeOnCmdPeriod, freeOnClose, window, step , hOff, vOff, scopeOn, specs, onInit, synthDef  = argArray ;
 		
 		if(aSynth.notNil){
 			target = aSynth
@@ -33,12 +34,14 @@ SynthDefAutogui {
 			}
 		};
 		
-		scopeOn = (((GUI.current.name == \CocoaGUI) || (GUI.current.name == \QtGUI)) && (target.server != Server.internal)).not && scopeOn;
-
-		synthDef = SynthDefStorage.synthDefDict[name.asString][0];
+		synthDesc = SynthDescLib.global[name.asSymbol];
+		if (synthDef.isNil) {
+			synthDef = SynthDefStorage.synthDefDict[name.asString].tryPerform(\at, 0)
+				?? { synthDesc.tryPerform(\def) }
+		};
 		// specs is a dict of controlspecs
 		// we need to access it, so better having a void one
-		if (specs.isNil) { specs = SynthDescLib.global[name.asSymbol].tryPerform(\metadata).tryPerform(\at,\specs) };
+		if (specs.isNil) { specs = synthDesc.tryPerform(\metadata).tryPerform(\at,\specs) };
 		if (specs.isNil) { specs = Dictionary.new } ;
 		// just not to fillup the init method
 		this.createMonitorTask ;
@@ -46,10 +49,9 @@ SynthDefAutogui {
 	}
 
 	// this is THE method
-	// maybe too long but at the end is a on-shot creation
+	// maybe too long but at the end is a one-shot creation
 	autogui {
-		
-		var composite ; // contains stetho
+
 		var h = step*2/5 ;	// vertical ratio fo modules
 		var mrg = step/5 ; // margin
 		// just ot draw all proportionally
@@ -58,34 +60,36 @@ SynthDefAutogui {
 		var xOff = wMod*2.5 ;
 		var fSize = 12/50*step ; // for font scaling
 		var playB, monitorB, rateBox ;
-		var labelArr, nameLabel ;
+		var labelArr ;
+		var ctrlNames ;
 		// a flag storing a property
 		var autowindow = false ;
-		
+
 		// contains info on defs and gui elements
 		controlArr = []; guiArr = [] ;
-		// monitor rate
-		dur = 2 ;
+		// monitor rate (period in seconds, default 10Hz)
+		dur = 0.1 ;
 		// creating a control structure for all control data in def
 		// search for user-defined specs
 		// if not set a default mapping
-		synthDef.allControlNames.do({ arg item, index ;
-				var name = item.asString.split($ )[4] ;
+		if (synthDef.isNil && synthDesc.isNil) {
+			Error("SynthDefAutogui: SynthDef '%' not found. Call .add on the SynthDef first.".format(name)).throw
+		};
+		ctrlNames = if(synthDef.notNil){synthDef.allControlNames}{synthDesc.controlNames};
+		ctrlNames.do({ arg item, index ;
+				var name = item.name.asString ;
+				var defVal = if(synthDef.notNil){synthDef.controls[index]}{item.defaultValue} ;
 				var ctrl ;
 				if (specs[name.asSymbol].isNil) {
-					ctrl = 
-					ControlSpec(0.0, (synthDef.controls[index]*2).max(1), \lin, 0.1, 
-						synthDef.controls[index]) ;
+					ctrl =
+					ControlSpec(0.0, (defVal*2).max(1), \lin, 0.1, defVal) ;
 					// special treatment for out
 					if (name.asSymbol== \out) {
-						ctrl = 
-						ControlSpec(0, 1, \lin, 1, 
-							synthDef.controls[index]) ;
-						}
-					} 
-					{
+						ctrl = ControlSpec(0, 1, \lin, 1, defVal) ;
+					}
+				} {
 					ctrl = specs[name.asSymbol].asSpec
-					} ;
+				} ;
 				controlArr = controlArr.add([name, ctrl])
 				}) ;
 		// GUI
@@ -93,7 +97,7 @@ SynthDefAutogui {
 		if (window.isNil)
 			{
 			autowindow = true ; // set the flag 
-			window = Window.new(synthDef.name++" Control Panel", 
+			window = Window.new(name++" Control Panel",
 					Rect(30,30, (controlArr.size+1.5)*wMod+(wMod*2), hMod*6)) ;
 			if (closeOnCmdPeriod) 
 				{ CmdPeriod.doOnce { window.close } } ;
@@ -101,31 +105,25 @@ SynthDefAutogui {
 				{ window.onClose_({ synth.free; task.stop}) } ;
 			window.front 
 		} ;
-		// if you want scope, we put it
-		// stethoscope bounds not as expected, solved with a trick 
 		if (scopeOn)
 			{
-			composite = CompositeView.new(window, Rect(mrg+hOff, mrg+vOff, step*3, h*5.5));
-			composite.decorator = FlowLayout(composite.bounds);
-			stetho = Stethoscope.new(target.server, 1, rate:rate, view: composite) ;
+			stetho = Stethoscope.new(target.server, 1, rate:rate, view: window) ;
+			{stetho.view.bounds_(Rect(mrg+hOff, mrg+vOff, step*3, hMod*5 - mrg))}.defer ;
 			};
 			
 		// general controllers
-		playB = Button.new(window, Rect(mrg+hOff, hMod*4+vOff, hMod*1.25, h))
+		playB = Button.new(window, Rect(mrg+hOff, hMod*5+vOff, hMod*1.25, h))
 			.states_([["| |", Color.white, Color.red], ["|>", Color.black, Color.grey]])
 			.action_({|v| if(v.value==1) { synth.run(false) } { synth.run(true) } })
 			.font_(Font(Font.defaultSansFace, fSize)) ;
-		monitorB = Button.new(window, Rect(hMod*2+hOff, hMod*4+vOff, hMod*1.25, h))
+		monitorB = Button.new(window, Rect(hMod*2+hOff, hMod*5+vOff, hMod*1.25, h))
 			.states_([["m:Off", Color.black, Color.grey],["m:On", Color.white, Color.red]])
 			.action_({|v| if(v.value==0) { this.stopMonitor } { this.startMonitor } })
 			.font_(Font(Font.defaultSansFace, fSize)) ;
-		rateBox = NumberBox.new(window, Rect(hMod*3.5+hOff, hMod*4+vOff, hMod*1.25, h))
-			.value_(dur)
-			.action_({|v|  dur = 1/v.value ; })
+		rateBox = NumberBox.new(window, Rect(hMod*3.5+hOff, hMod*5+vOff, hMod*1.25, h))
+			.value_(1/dur)
+			.action_({|v| dur = 1/v.value ; })
 			.font_(Font(Font.defaultSansFace, fSize)) ;
-		nameLabel = StaticText.new(window, Rect(mrg+hOff, hMod*5+vOff, wMod*2, h))
-			.font_(Font.new(Font.defaultMonoFace, fSize*1.25))
-			.string_(synthDef.name).align_( \right);
 		// labels
 		labelArr = [
 		StaticText.new( window, Rect( xOff+hOff, mrg+vOff, step, h ))
@@ -142,13 +140,13 @@ SynthDefAutogui {
 						.font_(Font(Font.defaultSansFace, fSize)) ,
 		StaticText.new( window, Rect( xOff+hOff, hMod*5+vOff, step, h ))
 						.string_( "name" ).align_( \right)
-						.font_(Font(Font.defaultSansFace, fSize)) 
+						.font_(Font(Font.defaultSansFace, fSize))
 					] ;
 		// no synth provided? Create one
 		if(aSynth.isNil) 
 			{ 
 				{
-			synth = synthDef.play(target,args,addAction=addAction) ;
+			synth = Synth(name, args, target, addAction) ;
 			target.server.sync ;
 			// attention to scope
 			if (scopeOn)
@@ -178,12 +176,12 @@ SynthDefAutogui {
 					.value_(item[1].unmap(item[1].default)),
 				NumberBox.new( window, Rect( wMod*(index)+xOff+hOff, hMod*4+vOff, step, h ))
 						.value_(item[1].default).align_( \center)
-						.font_(Font(Font.defaultSansFace, fSize)) , 
-				StaticText.new( window, Rect( wMod*(index)+xOff+hOff, 
+						.font_(Font(Font.defaultSansFace, fSize)) ,
+				StaticText.new( window, Rect( wMod*(index)+xOff+hOff,
 					hMod*5+vOff, step, h ))
 						.string_( item[0] ).align_( \center)
 						.font_(Font(Font.defaultSansFace, fSize)),
-				UserView.new( window, Rect( wMod*(index)+xOff+hOff, 
+				UserView.new( window, Rect( wMod*(index)+xOff+hOff,
 					hMod*5+vOff, step, h ))
 				] ;
 				guiArr = guiArr.add(guiElement) ;			
@@ -199,21 +197,20 @@ SynthDefAutogui {
 				monitorB.bounds_(monitorB.bounds.moveTo(mrg+hOff, mrg*2+vOff)) ;
 				rateBox.bounds_(rateBox.bounds.moveTo(mrg+hOff, mrg*2+hMod+vOff)) ;
 				playB.bounds_(playB.bounds.moveTo(mrg+hOff, hMod*4+mrg+vOff)) ;
-				nameLabel.bounds_(nameLabel.bounds.moveTo(mrg+hOff, hMod*3+vOff))
-					.align_(\left) ;
-				if (autowindow) 	
+						if (autowindow)
 					{window.bounds_(window.bounds.width_(window.bounds.width-(hMod*3)))}
 			} ;		
 		// GUI action definition
 		// mapping is retrieved from controlArr 
 		controlArr.do({ arg item, index ;
 			var guiElement = guiArr[index] ;
-			guiElement[0].action  = { arg minBox ;
-				item[1].minval_(minBox.value) ;						guiElement[2].value_(item[1].unmap(guiElement[3].value))
+			guiElement[0].action = { arg minBox ;
+				item[1].minval_(minBox.value) ;
+				guiElement[2].value_(item[1].unmap(guiElement[3].value))
 			} ;
-			guiElement[1].action  = { arg maxBox ;
+			guiElement[1].action = { arg maxBox ;
 				item[1].maxval_(maxBox.value) ;
-				 guiElement[2].value_(item[1].unmap(guiElement[3].value))
+				guiElement[2].value_(item[1].unmap(guiElement[3].value))
 			} ;
 			guiElement[2].action = { arg me ; 
 				var name, val ;
@@ -221,8 +218,9 @@ SynthDefAutogui {
 				val = item[1].map(me.value) ;
 				synth.set(name, val) ;
 				guiElement[3].value_(val) ; 
-				if(item[0].asSymbol == \out && stetho.notNil) {							synth.get(\out, { |v| bus = v ; {stetho.index_(bus)}.defer }) } 
-					} ;
+				if(item[0].asSymbol == \out && stetho.notNil) {
+					synth.get(\out, { |v| bus = v ; {stetho.index_(bus)}.defer }) }
+				} ;
 			guiElement[3].action = { arg me ; 
 				var name = item[0] ;
 				guiElement[2].value_(item[1].unmap(me.value)) ;
@@ -243,24 +241,21 @@ SynthDefAutogui {
 
 
 	// just to creat the monitoring task
-	createMonitorTask { 
+	createMonitorTask {
 		task = Task({
-			var val, t, mn, mx ;
 			inf.do{
-				t = dur/controlArr.size ;
-				synth.get(\out, { |v| bus = v ; 
+				synth.get(\out, { |v| bus = v ;
 					if (stetho.notNil) {{stetho.index_(bus)}.defer}
-					}) ;
-				t.wait ;
+				}) ;
 				controlArr.do({ arg item, index ;
 					synth.get(item[0].asSymbol, {|v|
-					{
-					guiArr[index][2].value_(item[1].unmap(v)) ;
-					guiArr[index][3].value_(v) ;
-					}.defer
-						}) ;
-					t.wait ;
+						{
+						guiArr[index][2].value_(item[1].unmap(v)) ;
+						guiArr[index][3].value_(v) ;
+						}.defer
+					}) ;
 				}) ;
+				dur.wait ;
 			}
 		}) ;
 	}

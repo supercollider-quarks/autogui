@@ -5,14 +5,14 @@
 + SynthDef {
 	
 
-	autogui { arg aSynth, rate = \audio, target, args, addAction=\addToTail, 
-					closeOnCmdPeriod = true, freeOnClose = true, 
+	autogui { arg aSynth, rate = \audio, target, args, addAction=\addToTail,
+					closeOnCmdPeriod = true, freeOnClose = true,
 					window, step = 50, hOff = 0, vOff = 0, scopeOn = true, specs, onInit = true ;
-			
+
 		SynthDefAutogui(
-			name, aSynth, rate, target,args,addAction, 
-			closeOnCmdPeriod, freeOnClose , 
-			window, step, hOff, vOff, scopeOn, specs, onInit)
+			name, aSynth, rate, target, args, addAction,
+			closeOnCmdPeriod, freeOnClose,
+			window, step, hOff, vOff, scopeOn, specs, onInit, this)
 	}
 
 }

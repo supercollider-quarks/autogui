@@ -1,0 +1,158 @@
+TITLE:: SynthDefAutogui
+SUMMARY:: Automatic GUI creation for SynthDefs and Synths
+CATEGORIES:: GUI, Convenience
+RELATED:: Classes/SynthDef, Classes/Synth, Classes/ControlSpec, Classes/Stethoscope
+
+DESCRIPTION::
+SynthDefAutogui creates a GUI to control and monitor a running Synth, or to play and test a SynthDef, with no previous planning needed.
+
+Its main usage is through two convenience methods added to SynthDef and Synth:
+code::
+aSynthDef.autogui
+aSynth.autogui
+::
+It can also be instantiated explicitly by name — see examples below.
+
+SUBSECTION:: How it works
+
+Control information is retrieved in the following order:
+NUMBEREDLIST::
+## The SynthDef object itself, if passed directly (as when using code::SynthDef:autogui::).
+## link::Classes/SynthDefStorage::, a dictionary populated by an overridden code::build:: method each time a SynthDef is compiled.
+## link::Classes/SynthDescLib::, the standard SuperCollider SynthDef registry (populated on code::.add::).
+::
+
+When using code::SynthDefAutogui(\name):: directly, the SynthDef must have been previously added with code::.add::.
+
+The GUI provides, for each arg:
+LIST::
+## strong::min/max:: NumberBoxes — define the mapping range on the fly
+## a strong::Knob:: — maps the value through a ControlSpec
+## a strong::NumberBox:: — shows and sets the current value
+## a strong::StaticText:: — arg name label; press any key on it to open a ControlSpec editor
+::
+
+Additional controls:
+LIST::
+## strong::Play/Pause:: button
+## strong::Monitor:: button — starts a Task polling code::synth.get():: for each arg and updating the GUI
+## strong::Rate:: NumberBox — monitor update rate in Hz (default: 10)
+## optional strong::Stethoscope:: scope (disable with code::scopeOn: false::)
+::
+
+CLASSMETHODS::
+
+METHOD:: new
+Create a SynthDefAutogui.
+
+ARGUMENT:: name
+Name of the SynthDef to inspect.
+
+ARGUMENT:: aSynth
+A running Synth to attach the GUI to. If nil, a new Synth is created from the named SynthDef.
+
+ARGUMENT:: rate
+Rate of the bus shown by the embedded Stethoscope. Default: code::\audio::.
+
+ARGUMENT:: target
+See link::Classes/SynthDef::. Default: nil.
+
+ARGUMENT:: args
+See link::Classes/SynthDef::. Default: nil.
+
+ARGUMENT:: addAction
+See link::Classes/SynthDef::. Default: code::\addToTail::.
+
+ARGUMENT:: closeOnCmdPeriod
+Boolean. Whether CmdPeriod closes the window. Default: code::true::.
+
+ARGUMENT:: freeOnClose
+Boolean. Whether closing the window frees the synth. Default: code::true::.
+
+ARGUMENT:: window
+An external Window to draw into. Default: nil (creates its own window).
+
+ARGUMENT:: step
+Base pixel dimension used to scale the entire GUI. Default: code::50::.
+
+ARGUMENT:: hOff
+Horizontal offset in pixels. Useful when embedding in an external window. Default: code::0::.
+
+ARGUMENT:: vOff
+Vertical offset in pixels. Useful when embedding in an external window. Default: code::0::.
+
+ARGUMENT:: scopeOn
+Boolean. Whether to show a Stethoscope scope. When false, the layout is tightened. Default: code::true::.
+
+ARGUMENT:: specs
+A Dictionary mapping argument names (as Symbols) to ControlSpecs. For any arg not present in the dict, defaults are: minval = 0, maxval = (default * 2).max(1), linear mapping. Default: nil.
+
+ARGUMENT:: onInit
+Boolean. If true, the GUI is built immediately on instantiation. Default: code::true::.
+
+INSTANCEMETHODS::
+
+METHOD:: autogui
+Build and display the GUI. Separated from code::init:: for flexibility (use with code::onInit: false::).
+
+METHOD:: startMonitor
+Start the monitoring Task, which polls the Synth's control values and updates the GUI.
+
+METHOD:: stopMonitor
+Stop the monitoring Task.
+
+EXAMPLES::
+
+code::
+Server.local.boot;
+
+// Minimal: define, add, and open autogui in one line
+SynthDef(\test, { arg out = 0, freq = 100; Out.ar(out, SinOsc.ar(freq)) }).add.autogui;
+
+// Attach to a running Synth
+x = Synth(\test).autogui;
+
+// No scope
+x = Synth(\test).autogui(scopeOn: false);
+
+// With custom ControlSpecs
+SynthDef(\test2, { arg out = 0, freq = 300, mul = 0.3, pf = 5;
+    Out.ar(out, SinOsc.ar(freq) * mul * LFPulse.kr(pf))
+}).add;
+x = Synth(\test2).autogui(specs: (
+    \freq: [20, 20000, \exp, 1, 440],
+    \mul:  [0, 1, \lin, 0.01, 0.3],
+    \pf:   [1, 100, \lin, 1, 5]
+));
+
+// Deferred GUI creation
+z = SynthDefAutogui(\test, onInit: false);
+z.autogui;
+
+// Monitor: toggle the monitor button, then change values externally
+x = Synth(\test).autogui;
+{ inf.do { x.synth.set(\freq, rrand(100, 1000)); 0.1.wait } }.fork;
+
+// Embedding multiple GUIs in one window (scopeOn: false for compact layout)
+// Height per GUI: step * 3.6
+// .add is async: fork and sync before creating the GUIs
+(
+var step = 40;
+var h = step * 3.6;                        // height per GUI: hMod * 6
+var wMod = step * 1.2;                     // step + margin
+var numCtrl = 3;                           // out, freq, amp
+var w_width = (numCtrl + 3.5) * wMod;     // width formula for scopeOn: false
+var w = Window.new("Multi", Rect(20, 20, w_width, h * 3)).front;
+{
+    SynthDef(\sin, { arg out = 0, freq = 100, amp = 0.1; Out.ar(out, SinOsc.ar(freq)*amp) }).add;
+    SynthDef(\saw, { arg out = 0, freq = 80,  amp = 0.1; Out.ar(out, Saw.ar(freq)*amp) }).add;
+    SynthDef(\pul, { arg out = 0, freq = 60,  amp = 0.1; Out.ar(out, Pulse.ar(freq)*amp) }).add;
+    s.sync;
+    {
+        SynthDefAutogui(\sin, window: w, step: step, scopeOn: false);
+        SynthDefAutogui(\saw, window: w, step: step, scopeOn: false, vOff: h);
+        SynthDefAutogui(\pul, window: w, step: step, scopeOn: false, vOff: h * 2);
+    }.defer;
+}.fork;
+)
+::
