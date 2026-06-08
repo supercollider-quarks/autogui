@@ -36,8 +36,7 @@ SynthDefAutogui {
 		
 		synthDesc = SynthDescLib.global[name.asSymbol];
 		if (synthDef.isNil) {
-			synthDef = SynthDefStorage.synthDefDict[name.asString].tryPerform(\at, 0)
-				?? { synthDesc.tryPerform(\def) }
+			synthDef = synthDesc.tryPerform(\def)
 		};
 		// specs is a dict of controlspecs
 		// we need to access it, so better having a void one
